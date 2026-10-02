@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Call or Fold</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --page:#E9EEEA; --ink:#17201B; --muted:#56635B; --panel:#FFFFFF; --line:#CCD6CF;
+  --felt:#1E5A43; --felt-edge:#143D2E; --felt-ink:#EAF4EE;
+  --card:#FBF8F1; --red:#C42A31; --black:#1B1D22;
+  --gold:#E2B44B; --good:#1F8A55; --bad:#C2402F;
+  --cell:#EEF2EF; --cell-on:#2F7A59; --cell-on-ink:#fff;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#0F1512; --ink:#E6EEE9; --muted:#9AA9A0; --panel:#18211C; --line:#2C3832;
+    --felt:#1A4E3A; --felt-edge:#0F2E22; --cell:#222D27; --cell-on:#3A9A70;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0F1512; --ink:#E6EEE9; --muted:#9AA9A0; --panel:#18211C; --line:#2C3832;
+  --felt:#1A4E3A; --felt-edge:#0F2E22; --cell:#222D27; --cell-on:#3A9A70;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--page);color:var(--ink);
+  font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-variant-numeric:tabular-nums;line-height:1.45}
+main{max-width:760px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:2.1rem;font-weight:800;letter-spacing:-0.02em;margin:0;line-height:1}
+.score{display:flex;gap:16px;font-size:.95rem;color:var(--muted)}
+.score b{color:var(--ink);font-weight:600}
+
+.table{background:radial-gradient(ellipse at 50% 40%,var(--felt) 0%,var(--felt-edge) 100%);
+  border-radius:28px;padding:18px 16px 20px;color:var(--felt-ink);
+  box-shadow:inset 0 0 0 6px rgba(0,0,0,.18)}
+.seat{display:flex;flex-direction:column;align-items:center;gap:8px}
+.seat-label{font-size:.9rem;opacity:.85;text-align:center}
+.seat-label strong{font-weight:600;opacity:1}
+.cards{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;min-height:84px}
+.card{width:58px;height:82px;border-radius:8px;background:var(--card);color:var(--black);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 2px 0 rgba(0,0,0,.25);font-weight:800;line-height:1}
+.card .r{font-size:1.6rem}
+.card .s{font-size:1.5rem;margin-top:2px}
+.card.red{color:var(--red)}
+.card.back{background:repeating-linear-gradient(45deg,#8E2B2F 0 6px,#A9393C 6px 12px);
+  border:3px solid var(--card)}
+.card.ghost{background:transparent;border:2px dashed rgba(255,255,255,.25);box-shadow:none}
+.card.flip{animation:flip .35s ease-out}
+@keyframes flip{from{transform:rotateY(90deg)}to{transform:rotateY(0)}}
+@media (prefers-reduced-motion: reduce){.card.flip{animation:none}}
+.middle{margin:16px 0;display:flex;flex-direction:column;align-items:center;gap:10px}
+.money{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;font-size:1rem}
+.chip{display:inline-flex;align-items:center;gap:8px}
+.chip i{width:18px;height:18px;border-radius:50%;background:var(--gold);
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.55),0 1px 0 rgba(0,0,0,.3)}
+.chip.bet i{background:#D9534F}
+.chip b{font-size:1.25rem}
+.street{font-size:.85rem;opacity:.8}
+.yours{font-size:.95rem;text-align:center}
+.yours strong{color:var(--gold);font-weight:600}
+
+.decide{display:flex;gap:10px;margin:16px 0 8px}
+button{font:inherit;cursor:pointer;border-radius:12px;border:0;padding:14px 18px;font-weight:600;font-size:1.05rem}
+button:focus-visible,input:focus-visible+span{outline:3px solid var(--gold);outline-offset:2px}
+.btn-fold{flex:1;background:var(--panel);color:var(--ink);box-shadow:inset 0 0 0 2px var(--line)}
+.btn-call{flex:1;background:var(--felt);color:#fff}
+.btn-next{width:100%;background:var(--ink);color:var(--page)}
+.btn-small{padding:8px 12px;font-size:.9rem;background:var(--panel);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+button:disabled{opacity:.45;cursor:default}
+.toggle{display:flex;align-items:center;gap:8px;font-size:.92rem;color:var(--muted);margin:4px 0 14px;cursor:pointer;width:fit-content}
+.toggle input{width:18px;height:18px;accent-color:var(--felt)}
+
+.panel{background:var(--panel);border-radius:18px;padding:18px;margin-top:14px;box-shadow:inset 0 0 0 1px var(--line)}
+.verdict{font-size:1.5rem;font-weight:800;margin:0 0 4px;letter-spacing:-0.01em}
+.verdict.good{color:var(--good)} .verdict.bad{color:var(--bad)} .verdict.close{color:var(--muted)}
+.explain{margin:0 0 16px;max-width:62ch}
+.bar-wrap{position:relative;margin:30px 0 12px}
+.bar{height:22px;border-radius:11px;background:var(--cell);overflow:hidden}
+.bar-fill{height:100%;border-radius:11px;transition:width .5s ease}
+.marker{position:absolute;top:-6px;bottom:-6px;width:3px;background:var(--ink);border-radius:2px}
+.marker span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.8rem;color:var(--muted);margin-bottom:4px}
+.bar-legend{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.stat{border-radius:12px;background:var(--cell);padding:10px 12px}
+.stat small{display:block;color:var(--muted);font-size:.8rem}
+.stat b{font-size:1.35rem;font-weight:800}
+.runout{margin-top:6px}
+.runout-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px}
+.runout-row span{flex-basis:100%;font-size:.9rem;color:var(--muted)}
+.runout .card{width:44px;height:62px}
+.runout .card .r{font-size:1.2rem}.runout .card .s{font-size:1.1rem}
+.runout p{margin:10px 0 0}
+h2{font-size:1.1rem;margin:22px 0 6px;font-weight:600}
+.sub{color:var(--muted);font-size:.9rem;margin:0 0 10px}
+.grid-scroll{overflow-x:auto}
+.grid{display:grid;grid-template-columns:repeat(13,minmax(30px,1fr));gap:2px;min-width:420px}
+.grid div{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:.68rem;border-radius:4px;background:var(--cell);color:var(--muted)}
+.grid div.on{background:var(--cell-on);color:var(--cell-on-ink);font-weight:600}
+.grid div.hero{box-shadow:inset 0 0 0 2px var(--gold)}
+.hidden{display:none}
+@media (max-width:520px){
+  h1{font-size:1.7rem}
+  .card{width:48px;height:68px}.card .r{font-size:1.3rem}.card .s{font-size:1.2rem}
+  .stats{grid-template-columns:1fr 1fr 1fr;gap:6px}.stat b{font-size:1.1rem}
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Call or fold?</h1>
+    <div class="score"><span>Hands <b id="sHands">0</b></span><span>Right <b id="sRight">0</b></span><span>Chips lost to mistakes <b id="sLost">0</b></span></div>
+  </header>
+
+  <section class="table" aria-label="Poker table">
+    <div class="seat">
+      <div class="cards" id="villCards"></div>
+      <div class="seat-label">Opponent plays <strong id="rangeName"></strong> <span id="rangeDesc"></span></div>
+    </div>
+    <div class="middle">
+      <div class="cards" id="board"></div>
+      <div class="street" id="street"></div>
+      <div class="money">
+        <span class="chip"><i></i>Pot <b id="pot"></b></span>
+        <span class="chip bet"><i></i>They bet <b id="bet"></b></span>
+      </div>
+    </div>
+    <div class="seat">
+      <div class="yours" id="yourHand"></div>
+      <div class="cards" id="heroCards"></div>
+      <div class="seat-label">Your hand</div>
+    </div>
+  </section>
+
+  <div class="decide">
+    <button class="btn-fold" id="foldBtn">Fold</button>
+    <button class="btn-call" id="callBtn">Call <span id="callAmt"></span></button>
+  </div>
+  <label class="toggle"><input type="checkbox" id="hintToggle"><span>Show the math before I decide</span></label>
+
+  <section class="panel hidden" id="result" aria-live="polite">
+    <p class="verdict" id="verdict"></p>
+    <p class="explain" id="explain"></p>
+
+    <div class="bar-wrap">
+      <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+      <div class="marker" id="marker"><span id="markerLabel"></span></div>
+    </div>
+    <div class="bar-legend"><span>0%</span><span>How often you win</span><span>100%</span></div>
+
+    <div class="stats">
+      <div class="stat"><small>You win</small><b id="stEq"></b></div>
+      <div class="stat"><small>You need</small><b id="stNeed"></b></div>
+      <div class="stat"><small>Call is worth</small><b id="stEv"></b></div>
+    </div>
+
+    <div id="afterOnly">
+      <div class="runout">
+        <button class="btn-small" id="runBtn">Deal it out once</button>
+        <div id="runResult"></div>
+      </div>
+
+      <h2>What they could have</h2>
+      <p class="sub" id="rangeInfo"></p>
+      <div class="grid-scroll"><div class="grid" id="grid" aria-label="Opponent range chart"></div></div>
+      <p class="sub" style="margin-top:8px">Pairs run down the diagonal. Suited hands are above it, offsuit below. Gold outline is your hand.</p>
+
+      <button class="btn-next" id="nextBtn" style="margin-top:18px">Next hand</button>
+    </div>
+  </section>
+</main>
+<script>
+function straightHigh(mask){
+  for(let h=12;h>=4;h--){ if(((mask>>(h-4))&0x1F)===0x1F) return h; }
+  if((mask&0x100F)===0x100F) return 3;
+  return -1;
+}
+function enc(cat,ks){let v=cat;for(let i=0;i<5;i++){v=v*16+(ks[i]!==undefined?ks[i]+1:0);}return v;}
+function evalHand(cards){
+  const counts=new Array(13).fill(0),sm=[0,0,0,0],sc=[0,0,0,0];let rm=0;
+  for(const c of cards){const r=c>>2,s=c&3;counts[r]++;sm[s]|=1<<r;sc[s]++;rm|=1<<r;}
+  let fs=-1;for(let s=0;s<4;s++) if(sc[s]>=5) fs=s;
+  if(fs>=0){const sh=straightHigh(sm[fs]); if(sh>=0) return enc(8,[sh]);}
+  const q=[],t=[],p=[],o=[];
+  for(let r=12;r>=0;r--){const n=counts[r]; if(n===4)q.push(r); else if(n===3)t.push(r); else if(n===2)p.push(r); else if(n===1)o.push(r);}
+  if(q.length){const k=[...t,...p,...o].sort((a,b)=>b-a)[0];return enc(7,[q[0],k]);}
+  if(t.length&&(t.length>1||p.length)){const pp=Math.max(t[1]??-1,p[0]??-1);return enc(6,[t[0],pp]);}
+  if(fs>=0){const ks=[];for(let r=12;r>=0&&ks.length<5;r--) if(sm[fs]&(1<<r)) ks.push(r);return enc(5,ks);}
+  const sh=straightHigh(rm); if(sh>=0) return enc(4,[sh]);
+  if(t.length) return enc(3,[t[0],o[0],o[1]]);
+  if(p.length>=2){const k=Math.max(p[2]??-1,o[0]??-1);return enc(2,[p[0],p[1],k]);}
+  if(p.length===1) return enc(1,[p[0],o[0],o[1],o[2]]);
+  return enc(0,o.slice(0,5));
+}
+const RANKS="23456789TJQKA", SUITS="shdc", SYM={s:"♠",h:"♥",d:"♦",c:"♣"};
+const PLURAL=["Twos","Threes","Fours","Fives","Sixes","Sevens","Eights","Nines","Tens","Jacks","Queens","Kings","Aces"];
+const ci=(r,s)=>RANKS.indexOf(r)*4+SUITS.indexOf(s);
+
+// ---------- ranges ----------
+function pairC(r){const o=[];for(let a=0;a<4;a++)for(let b=a+1;b<4;b++)o.push([ci(r,SUITS[a]),ci(r,SUITS[b])]);return o;}
+function suitC(h,l){return [0,1,2,3].map(s=>[ci(h,SUITS[s]),ci(l,SUITS[s])]);}
+function offC(h,l){const o=[];for(let a=0;a<4;a++)for(let b=0;b<4;b++)if(a!==b)o.push([ci(h,SUITS[a]),ci(l,SUITS[b])]);return o;}
+function classC(h,l,k){if(h===l)return pairC(h);if(k==="s")return suitC(h,l);if(k==="o")return offC(h,l);return suitC(h,l).concat(offC(h,l));}
+function parseToken(tok){
+  tok=tok.trim(); if(!tok) return [];
+  const plus=tok.endsWith("+"), body=tok.replace("+","");
+  let h=body[0], l=body[1]; const k=body[2]||"";
+  if(RANKS.indexOf(l)>RANKS.indexOf(h)) [h,l]=[l,h];
+  if(!plus) return classC(h,l,k);
+  let out=[];
+  if(h===l){for(const r of RANKS.slice(RANKS.indexOf(h))) out=out.concat(pairC(r));}
+  else{for(const lo of RANKS.slice(RANKS.indexOf(l),RANKS.indexOf(h))) out=out.concat(classC(h,lo,k));}
+  return out;
+}
+function parseRange(text){const seen=new Set(),out=[];for(const t of text.split(","))for(const c of parseToken(t)){const key=Math.min(...c)*52+Math.max(...c);if(!seen.has(key)){seen.add(key);out.push(c);}}return out;}
+
+const RANGES=[
+  {name:"tight", desc:"(only bets strong hands)", text:"TT+, AQs+, AKo"},
+  {name:"solid", desc:"(bets good hands and some draws)", text:"77+, ATs+, KJs+, QJs, JTs, AJo+, KQo"},
+  {name:"loose", desc:"(bets with lots of hands)", text:"22+, A2s+, K8s+, Q9s+, J9s+, T9s, 98s, 87s, A8o+, KTo+, QTo+, JTo"},
+];
+RANGES.forEach(r=>r.combos=parseRange(r.text));
+
+// ---------- hand names ----------
+const P5=16**5, P4=16**4, P3=16**3;
+function handName(score){
+  const cat=Math.floor(score/P5), r1=Math.floor(score/P4)%16-1, r2=Math.floor(score/P3)%16-1;
+  switch(cat){
+    case 8: return r1===12?"Royal flush":"Straight flush";
+    case 7: return "Four "+PLURAL[r1];
+    case 6: return "Full house, "+PLURAL[r1]+" full of "+PLURAL[r2];
+    case 5: return "Flush";
+    case 4: return "Straight";
+    case 3: return "Three "+PLURAL[r1];
+    case 2: return "Two pair, "+PLURAL[r1]+" and "+PLURAL[r2];
+    case 1: return "Pair of "+PLURAL[r1];
+    default: return RANKS[r1].replace("T","10")+" high";
+  }
+}
+function draws(hero,board){
+  if(board.length<3||board.length>=5) return [];
+  const all=hero.concat(board), out=[];
+  const cat=Math.floor(evalHand(all)/P5);
+  if(cat<5){for(let s=0;s<4;s++){const n=all.filter(c=>(c&3)===s).length;if(n===4&&hero.some(c=>(c&3)===s)){out.push("flush draw");break;}}}
+  if(cat<4){let rm=0;for(const c of all) rm|=1<<(c>>2);let outs=0;
+    for(let r=0;r<13;r++){if(rm&(1<<r))continue;if(straightHigh(rm|(1<<r))>=0)outs++;}
+    if(outs>=2) out.push("open-ended straight draw"); else if(outs===1) out.push("gutshot straight draw");}
+  return out;
+}
+
+// ---------- simulation ----------
+const rnd=n=>Math.floor(Math.random()*n);
+function liveCombos(combos,dead){return combos.filter(c=>!dead.has(c[0])&&!dead.has(c[1]));}
+function equity(hero,board,live,iters){
+  const dead=new Set(hero.concat(board)), avail=[];for(let i=0;i<52;i++) if(!dead.has(i)) avail.push(i);
+  const mark=new Int32Array(52);let stamp=0,w=0,t=0;const hb=new Array(7),vb=new Array(7);
+  for(let it=0;it<iters;it++){
+    stamp++;const v=live[rnd(live.length)];mark[v[0]]=stamp;mark[v[1]]=stamp;
+    let n=0;for(const c of board){hb[n]=c;vb[n]=c;n++;}
+    while(n<5){const c=avail[rnd(avail.length)];if(mark[c]!==stamp){mark[c]=stamp;hb[n]=c;vb[n]=c;n++;}}
+    hb[5]=hero[0];hb[6]=hero[1];vb[5]=v[0];vb[6]=v[1];
+    const a=evalHand(hb),b=evalHand(vb);if(a>b)w++;else if(a===b)t++;
+  }
+  return (w+t/2)/iters;
+}
+function dealOut(hero,board,live){
+  const v=live[rnd(live.length)];const used=new Set(hero.concat(board,v));const run=board.slice();
+  while(run.length<5){const c=rnd(52);if(!used.has(c)){used.add(c);run.push(c);}}
+  return {v,run,hs:evalHand(run.concat(hero)),vs:evalHand(run.concat(v))};
+}
+
+// ---------- scenario ----------
+const STREETS={3:"Flop",4:"Turn",5:"River"};
+function shuffled(){const d=[...Array(52).keys()];for(let i=51;i>0;i--){const j=rnd(i+1);[d[i],d[j]]=[d[j],d[i]];}return d;}
+function makeScenario(){
+  let best=null;
+  for(let tries=0;tries<40;tries++){
+    const d=shuffled(), nb=[3,3,4,4,5][rnd(5)];
+    const hero=d.slice(0,2), board=d.slice(2,2+nb), range=RANGES[rnd(3)];
+    const live=liveCombos(range.combos,new Set(hero.concat(board)));
+    if(live.length<3) continue;
+    const pot=[40,60,80,100,120,160][rnd(6)], frac=[1/3,1/2,2/3,3/4,1][rnd(5)];
+    const bet=Math.max(5,Math.round(pot*frac/5)*5), need=bet/(pot+2*bet);
+    const quick=equity(hero,board,live,700);
+    best={hero,board,range,live,pot,bet,need};
+    if(Math.abs(quick-need)<0.14||Math.random()<0.2) break;
+  }
+  best.eq=equity(best.hero,best.board,best.live,9000);
+  best.ev=best.eq*(best.pot+best.bet)-(1-best.eq)*best.bet;
+  return best;
+}
+
+// ---------- rendering ----------
+const $=id=>document.getElementById(id);
+function cardEl(c,cls=""){const r=RANKS[c>>2],s=SUITS[c&3];const el=document.createElement("div");
+  el.className="card "+cls+((s==="h"||s==="d")?" red":"");el.setAttribute("aria-label",(r==="T"?"10":r)+" of "+{s:"spades",h:"hearts",d:"diamonds",c:"clubs"}[s]);
+  el.innerHTML=`<span class="r">${r==="T"?"10":r}</span><span class="s">${SYM[s]}</span>`;return el;}
+function back(){const el=document.createElement("div");el.className="card back";el.setAttribute("aria-label","hidden card");return el;}
+function ghost(){const el=document.createElement("div");el.className="card ghost";return el;}
+const pct=x=>(x*100).toFixed(1)+"%";
+const chips=x=>(x>=0?"+":"−")+Math.abs(x).toFixed(1);
+
+let S=null, decided=false, runs={n:0,w:0};
+let stats={hands:0,right:0,lost:0};
+try{const s=JSON.parse(localStorage.getItem("cof-stats")||"null");if(s)stats=s;}catch(e){}
+function saveStats(){try{localStorage.setItem("cof-stats",JSON.stringify(stats));}catch(e){}}
+function renderStats(){$("sHands").textContent=stats.hands;$("sRight").textContent=stats.right;$("sLost").textContent=stats.lost.toFixed(0);}
+
+function classKey(a,b){const ra=a>>2,rb=b>>2,h=Math.max(ra,rb),l=Math.min(ra,rb);if(h===l)return RANKS[h]+RANKS[l];return RANKS[h]+RANKS[l]+(((a&3)===(b&3))?"s":"o");}
+function renderGrid(){
+  const on=new Set(S.range.combos.map(c=>classKey(c[0],c[1]))), hk=classKey(S.hero[0],S.hero[1]);
+  const g=$("grid");g.innerHTML="";
+  for(let i=12;i>=0;i--)for(let j=12;j>=0;j--){
+    let k; if(i===j)k=RANKS[i]+RANKS[j]; else if(j<i)k=RANKS[i]+RANKS[j]+"s"; else k=RANKS[j]+RANKS[i]+"o";
+    const d=document.createElement("div");d.textContent=k;if(on.has(k))d.classList.add("on");if(k===hk)d.classList.add("hero");g.appendChild(d);
+  }
+  const total=S.range.combos.length, blocked=total-S.live.length;
+  $("rangeInfo").textContent=`${S.range.text}. That's ${total} card combinations; ${blocked} of them are impossible because they'd need a card you can see, leaving ${S.live.length}.`;
+}
+
+function renderTable(){
+  $("villCards").replaceChildren(back(),back());
+  const b=$("board");b.replaceChildren(...S.board.map(c=>cardEl(c)));for(let i=S.board.length;i<5;i++)b.appendChild(ghost());
+  $("heroCards").replaceChildren(...S.hero.map(c=>cardEl(c)));
+  $("street").textContent=STREETS[S.board.length];
+  $("pot").textContent=S.pot;$("bet").textContent=S.bet;$("callAmt").textContent=S.bet;
+  $("rangeName").textContent=S.range.name;$("rangeDesc").textContent=S.range.desc;
+  const dr=draws(S.hero,S.board);
+  $("yourHand").innerHTML=`You have <strong>${handName(evalHand(S.hero.concat(S.board)))}</strong>`+(dr.length?` + ${dr.join(" + ")}`:"");
+}
+function renderMath(){
+  const good=S.eq>=S.need;
+  $("barFill").style.width=pct(S.eq);$("barFill").style.background=good?"var(--good)":"var(--bad)";
+  $("marker").style.left=`calc(${(S.need*100).toFixed(2)}% - 1.5px)`;$("markerLabel").textContent="need "+pct(S.need);
+  $("stEq").textContent=pct(S.eq);$("stNeed").textContent=pct(S.need);
+  $("stEv").textContent=chips(S.ev);$("stEv").style.color=S.ev>=0?"var(--good)":"var(--bad)";
+}
+function showPanel(full){
+  $("result").classList.remove("hidden");
+  $("verdict").classList.toggle("hidden",!full);$("explain").classList.toggle("hidden",!full);$("afterOnly").classList.toggle("hidden",!full);
+}
+
+function newHand(){
+  S=makeScenario();decided=false;runs={n:0,w:0};$("runResult").innerHTML="";
+  renderTable();renderMath();
+  $("foldBtn").disabled=false;$("callBtn").disabled=false;
+  if($("hintToggle").checked) showPanel(false); else $("result").classList.add("hidden");
+}
+
+function decide(choice){
+  if(decided) return;decided=true;
+  const close=Math.abs(S.eq-S.need)<0.02, bestCall=S.ev>0;
+  const right=close||(choice==="call")===bestCall;
+  const lost=choice==="call"?Math.max(0,-S.ev):Math.max(0,S.ev);
+  stats.hands++;if(right)stats.right++;if(!close)stats.lost+=lost;saveStats();renderStats();
+  const v=$("verdict");v.className="verdict "+(close?"close":right?"good":"bad");
+  v.textContent=close?"Close spot. Calling and folding are about equal.":right?(choice==="call"?"Good call.":"Good fold."):(choice==="call"?"That call loses chips.":"That fold gave up chips.");
+  const total=S.pot+S.bet;
+  $("explain").textContent=`Calling costs ${S.bet} to win ${total} (the ${S.pot} pot plus their ${S.bet}). To break even you need to win ${S.bet} ÷ ${S.pot+2*S.bet} = ${pct(S.need)} of the time. Against a ${S.range.name} range you win about ${pct(S.eq)}, so each call ${S.ev>=0?"earns":"loses"} about ${Math.abs(S.ev).toFixed(1)} chips on average. ${bestCall?"Calling is the better play.":"Folding is the better play."}`;
+  renderMath();renderGrid();showPanel(true);
+  $("foldBtn").disabled=true;$("callBtn").disabled=true;
+  $("result").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+}
+
+function runOnce(){
+  const r=dealOut(S.hero,S.board,S.live);runs.n++;
+  const res=r.hs>r.vs?"win":r.hs<r.vs?"lose":"tie";if(res==="win")runs.w++;else if(res==="tie")runs.w+=0.5;
+  $("villCards").replaceChildren(...r.v.map(c=>cardEl(c,"flip")));
+  const box=$("runResult");
+  const row=c=>{const d=document.createElement("div");d.className="runout-row";c.forEach(x=>d.appendChild(x));return d;};
+  const lab=t=>{const s=document.createElement("span");s.textContent=t;return s;};
+  box.replaceChildren(
+    row([lab("They had"),...r.v.map(c=>cardEl(c,"flip"))]),
+    row([lab("Final board"),...r.run.map((c,i)=>cardEl(c,i>=S.board.length?"flip":""))])
+  );
+  const p=document.createElement("p");
+  p.innerHTML=`You <strong>${res}</strong>: ${handName(r.hs)} vs their ${handName(r.vs)}. Dealt ${runs.n} time${runs.n>1?"s":""}, you've won ${runs.w} (${pct(runs.w/runs.n)}). Over many deals this settles near ${pct(S.eq)}.`;
+  box.appendChild(p);
+}
+
+$("foldBtn").onclick=()=>decide("fold");
+$("callBtn").onclick=()=>decide("call");
+$("nextBtn").onclick=()=>{newHand();window.scrollTo({top:0});};
+$("runBtn").onclick=runOnce;
+$("hintToggle").onchange=()=>{if(!decided){if($("hintToggle").checked)showPanel(false);else $("result").classList.add("hidden");}};
+renderStats();newHand();
+</script>
+</body>
+</html>
